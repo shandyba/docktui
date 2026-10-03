@@ -20,6 +20,13 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   ID can go stale after a daemon restart), so the count agrees with the
   Containers view.
 
+### Changed
+
+- If listing images, volumes, or networks fails (e.g. a socket proxy that
+  blocks the networks endpoint), the error now shows inside that view instead
+  of re-appearing in the footer on every 10s refresh. The other views keep
+  updating normally.
+
 ## [0.1.1] - 2026-05-24
 
 ### Changed

@@ -53,6 +53,8 @@ export class ResourceListTab<T> {
   private items: T[] = [];
   private active = false;
   private updating = false;
+  /** Last listing failure; shown in the panel until the next successful poll. */
+  private loadError: string | null = null;
   private errorHandlers: ErrorHandler[] = [];
   private navigateHandlers: NavigateHandler<T>[] = [];
 
@@ -151,6 +153,21 @@ export class ResourceListTab<T> {
   }
 
   setData(items: T[]): void {
+    this.loadError = null;
+    this.applyData(items);
+  }
+
+  /**
+   * Show a listing failure in the panel itself rather than the footer — polls repeat,
+   * so a footer message would re-fire every cycle. Clears the rows so a stale item
+   * can't be deleted; the next successful `setData` replaces the message.
+   */
+  showLoadError(message: string): void {
+    this.loadError = message;
+    this.applyData([]);
+  }
+
+  private applyData(items: T[]): void {
     this.updating = true;
 
     const prevIdx = listSelected(this.list);
@@ -159,6 +176,7 @@ export class ResourceListTab<T> {
 
     this.items = items;
     this.messageBox.hide();
+    this.messageBox.height = 1;
 
     const innerWidth = Math.max(10, (this.list.width as number) - 2);
     const widths = this.calcWidths(innerWidth);
@@ -174,7 +192,12 @@ export class ResourceListTab<T> {
 
     this.updating = false;
 
-    if (items.length === 0) {
+    if (this.loadError) {
+      // Taller box so a long daemon error wraps instead of being clipped.
+      this.messageBox.height = 3;
+      this.messageBox.setContent(t.red(`  ${this.loadError}`));
+      this.messageBox.show();
+    } else if (items.length === 0) {
       this.messageBox.setContent(t.comment(`  ${this.config.emptyMessage}`));
       this.messageBox.show();
     }
@@ -189,7 +212,7 @@ export class ResourceListTab<T> {
 
   /** Re-render the current dataset (useful after terminal resize). */
   redraw(): void {
-    this.setData(this.items);
+    this.applyData(this.items);
   }
 
   private emitNavigate(): void {

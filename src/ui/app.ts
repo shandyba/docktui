@@ -420,40 +420,40 @@ export class App {
     this.pollingResources = true;
     try {
       // Settle each resource independently so one listing's failure doesn't blank the others.
+      // Failures render inside the affected tab, not the footer: this poll repeats every 10s,
+      // and the footer is reserved for one-off messages.
       const [imagesR, volumesR, networksR] = await Promise.allSettled([
         listImages(),
         listVolumes(),
         listNetworks(),
       ]);
-      const errors: string[] = [];
 
       if (imagesR.status === 'fulfilled') {
         this.imageCount = imagesR.value.length;
         this.imagesTab.setData(imagesR.value);
       } else {
-        errors.push(msgOf(imagesR.reason));
+        this.imageCount = 0;
+        this.imagesTab.showLoadError(msgOf(imagesR.reason));
       }
 
       if (volumesR.status === 'fulfilled') {
         this.volumeCount = volumesR.value.length;
         this.volumesTab.setData(volumesR.value);
       } else {
-        errors.push(msgOf(volumesR.reason));
+        this.volumeCount = 0;
+        this.volumesTab.showLoadError(msgOf(volumesR.reason));
       }
 
       if (networksR.status === 'fulfilled') {
         this.networkCount = networksR.value.length;
         this.networksTab.setData(networksR.value);
       } else {
-        errors.push(msgOf(networksR.reason));
+        this.networkCount = 0;
+        this.networksTab.showLoadError(msgOf(networksR.reason));
       }
 
       this.refreshRailCounts();
-      if (errors.length > 0) {
-        this.setFooterMessage(errors[0], 'red');
-      } else {
-        this.footer.noteRefresh();
-      }
+      this.footer.noteRefresh();
       this.render();
     } catch (err) {
       this.setFooterMessage(msgOf(err), 'red');
